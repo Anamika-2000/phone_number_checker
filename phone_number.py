@@ -47,7 +47,7 @@ def lookup_phone():
 # Create the GUI
 root = tk.Tk()
 root.title("Phone Number Lookup")
-root.geometry("400x300")
+root.geometry("800x300")
 
 # Phone Number Entry
 phone_label = tk.Label(root, text="Enter phone number along with country code :")
