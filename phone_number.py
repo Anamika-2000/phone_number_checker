@@ -1,42 +1,77 @@
-
 import phonenumbers
-import opencage
+from phonenumbers import geocoder, carrier
 import folium
+from geopy.geocoders import Nominatim
+import tkinter as tk
+from tkinter import messagebox
 
-from phonenumbers import timezone,geocoder,carrier
-from opencage.geocoder import OpenCageGeocode
+def lookup_phone():
+    phone = phone_entry.get()
 
-phone=input('phone number')
-x = phonenumbers.parse(phone, "CH")#entering phone number
-print("Your phone number is: ")
-print(x)
+    try:
+        # Parse the phone number
+        x = phonenumbers.parse(phone, "CH")
+        parsed_number.set("Your phone number with country code is: " + str(x))
 
-timezone=timezone.time_zones_for_number(x)#time zone
-print("time zone is: ")
-print(timezone)
+        # Get the carrier information
+        carrier_name = carrier.name_for_number(x, 'en')
+        carrier_info.set("The company from which the SIM was bought is: " + carrier_name)
 
-carrier=carrier.name_for_number(x,'en')#carrier like airtel
+        # Get the location information
+        location = geocoder.description_for_number(x, 'en')
+        location_info.set("Your location is: " + location)
 
-location=geocoder.description_for_number(x,'en') #to show region like india
+        # Geocode the location
+        geolocator = Nominatim(user_agent="my_app")
+        query = location + ", " + location
+        geocode = geolocator.geocode(query)
 
-print("Your company is :",carrier)
+        if geocode is not None:
+            lat = geocode.latitude
+            lng = geocode.longitude
+            map_info.set("The latitude and longitude for " + location + " are: " + str(lat) + ", " + str(lng))
 
-print("Your region is :",location)
+            # Create a map and add a marker
+            myMap = folium.Map(location=[lat, lng], zoom_start=9)
+            folium.Marker([lat, lng], popup=location).add_to(myMap)
 
+            # Save the map to an HTML file
+            myMap.save("myloc.html")
+            messagebox.showinfo("Map Saved", "Map saved to myloc.html")
+        else:
+            map_info.set("Location not found.")
 
-key='3675876a7af74111b1852b9de8953467'
-geocoder=OpenCageGeocode(key)
-query=str(location)
-result=geocoder.geocode(query)
-print("The full latitude and longitude location are:")
-print(result)
+    except phonenumbers.NumberParseException:
+        messagebox.showerror("Invalid Phone Number", "Please enter a valid phone number.")
 
-lat=result[0]['geometry']['lat']
-lng=result[0]['geometry']['lng']
-print("The latitude and longitude location are:")
-print(lat,lng)
+# Create the GUI
+root = tk.Tk()
+root.title("Phone Number Lookup")
+root.geometry("400x300")
 
-myMap=folium.Map(location=[lat,lng],zoom_start=9)
-folium.Marker([lat,lng],popup=location).add_to(myMap)
+# Phone Number Entry
+phone_label = tk.Label(root, text="Enter phone number along with country code :")
+phone_label.pack()
+phone_entry = tk.Entry(root)
+phone_entry.pack()
 
-myMap.save("myloc.html")
+# Button to lookup phone number
+lookup_button = tk.Button(root, text="Lookup", command=lookup_phone)
+lookup_button.pack()
+
+# Result Labels
+parsed_number = tk.StringVar()
+carrier_info = tk.StringVar()
+location_info = tk.StringVar()
+map_info = tk.StringVar()
+
+parsed_label = tk.Label(root, textvariable=parsed_number)
+parsed_label.pack()
+carrier_label = tk.Label(root, textvariable=carrier_info)
+carrier_label.pack()
+location_label = tk.Label(root, textvariable=location_info)
+location_label.pack()
+map_label = tk.Label(root, textvariable=map_info)
+map_label.pack()
+
+root.mainloop()
